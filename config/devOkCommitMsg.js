@@ -17,7 +17,7 @@ const example = `
 [I] Improved #186: 改进/提升
 [X] Debug: 调试 /file/path:12
 [-] Misc: 其它/杂项
-[~] Initial.`.replace(/\s#\d+/g, '');
+[~] Initial`.replace(/\s#\d+/g, '');
 function okMsg(commitMsg) {
 
     const template = example.split('\n').filter(Boolean).map(v => {
@@ -27,7 +27,7 @@ function okMsg(commitMsg) {
         // s = s.replace(/\s#\d+/, '( #\\d+)?');
         s = s.replace(/\s#\d+/, '');
         s = s.replace(/(\[|\])/g, '\\$1');
-        return s + ': .+';
+        return v==='[~] Initial' ? s : s + ': .+';
     });
     return template.some(v => new RegExp(v).test(commitMsg));
 }

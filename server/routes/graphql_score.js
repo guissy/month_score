@@ -67,29 +67,25 @@ module.exports = {
       finishBoss: Boolean
       finishSelf: Boolean
     }
-    
-    type ListResult {
+    type Result<T> {
       state: Int!
-      data: [Score]
-    }
-    type DetailResult {
+      message: String!
+      data: T    
+    } 
+    type ResultList<T> {
       state: Int!
-      message: String      
-      data: Score
-    }   
-    type Result {
-      state: Int!
-      message: String
-    }  
+      message: String!
+      data: [T]    
+    } 
     extend type Query {
-      list(date: String): ListResult
-      detail(uid: Int!, date: String!): DetailResult
+      list(date: String): ResultList<Score>
+      detail(uid: Int!, date: String!): Result<Score>
     }
     extend type Mutation {
-      save(score: ScoreInput!): DetailResult
-      done(uid: Int!, date: String!): Result
-      delete(uid: Int!, date: String!): Result
-      export(uid: Int!, date: String!): Result
+      save(score: ScoreInput!): Result<Boolean>
+      done(uid: Int!, date: String!): Result<Boolean>
+      delete(uid: Int!, date: String!): Result<Boolean>
+      export(uid: Int!, date: String!): Result<Boolean>
     }
   `,
   resolvers: {
