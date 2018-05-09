@@ -113,6 +113,7 @@ const DefaultScore: Partial<Score> = {
         state
         message
         data {
+          id
           uid
           hard {
             ...ScoreItemFragment
@@ -178,7 +179,7 @@ const DefaultScore: Partial<Score> = {
   {
     name: 'saveMutation',
     options: {
-      refetchQueries: ['listQuery', 'detailQuery']
+      refetchQueries: ['detailQuery']
     }
   }
 )

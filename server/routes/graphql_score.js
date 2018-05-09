@@ -26,7 +26,7 @@ module.exports = {
       grow: ScoreItem!
       team: ScoreItem!
       meeting: ScoreItem!
-    
+      id: ID!
       uid: Int!
       job: String
       part: String
@@ -77,15 +77,18 @@ module.exports = {
       message: String!
       data: [T]    
     } 
+    type Empty {
+      id: Int
+    }
     extend type Query {
       list(date: String): ResultList<Score>
       detail(uid: Int!, date: String!): Result<Score>
     }
     extend type Mutation {
-      save(score: ScoreInput!): Result<Boolean>
-      done(uid: Int!, date: String!): Result<Boolean>
-      delete(uid: Int!, date: String!): Result<Boolean>
-      export(uid: Int!, date: String!): Result<Boolean>
+      save(score: ScoreInput!): Result<Empty>
+      done(uid: Int!, date: String!): Result<Empty>
+      delete(uid: Int!, date: String!): Result<Empty>
+      export(uid: Int!, date: String!): Result<Empty>
     }
   `,
   resolvers: {
@@ -134,6 +137,7 @@ module.exports = {
         if (scoreDb) {
           scoreDb.set(scoreIn);
           scoreDb.set('uid', scoreIn.uid);
+          scoreDb.set('id', scoreIn.uid + '_' + scoreIn.date);
           scoreDb.save();
           result = resultOk(scoreDb.toJSON());
         } else {

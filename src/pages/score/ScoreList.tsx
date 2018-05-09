@@ -49,6 +49,7 @@ interface Props extends Partial<Hoc> {}
       list(date: $date) {
         state
         data {
+          id
           uid
           hard {
             ...ScoreItemFragment
@@ -168,6 +169,10 @@ export default class ScoreList extends React.PureComponent<Props, {}> {
       {
         title: '姓名',
         dataIndex: 'truename'
+      },
+      {
+        title: '难度说明',
+        dataIndex: 'hard.about'
       },
       {
         title: '年月',
