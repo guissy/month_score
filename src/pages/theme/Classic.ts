@@ -1,0 +1,5 @@
+/**
+ * classic theme
+ */
+
+export default {};

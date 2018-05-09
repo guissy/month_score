@@ -1,0 +1,72 @@
+// 关于表格状态类的字段一律用tag加上颜色区分，其他字段一律都不加颜色
+// 1.tag账号状态
+// 启用，在线
+.account-opened {
+    color: #fff;
+    background: #13ce66;
+}
+// 停用， 离线
+.account-close {
+    color: #fff;
+    background: #f56c6c;
+}
+// 封号, 禁用
+.account-disabled {
+    color: #fff;
+    background: #909399;
+}
+
+// 已审核, 已通过, 已处理
+.audit-ed {
+    color: #fff;
+    background: #13ce66;
+}
+// 未申请
+.audit-no {
+    color: #fff;
+    background: #909399;
+}
+// 审核中， 未处理
+.audit-ing {
+    color: #fff;
+    background: #e6a23c; 
+}
+// 已拒绝
+.audit-refused {
+    color: #fff;
+    background: #f56c6c;
+}
+
+// 注单状态
+// 已结算
+.notesingle-ed {
+    color: #fff;
+    background: #13ce66;
+}
+// 未结算
+.notesingle-no {
+    color: #fff;
+    background: #e6a23c; 
+}
+// 已拒绝
+.notesingle-refused {
+    color: #fff;
+    background: #f56c6c;
+}
+
+// 常规状态下的tag样式模版
+//  类似开始，完成，成功
+.status-complate {
+    color: #fff;
+    background: #13ce66;
+}
+// 进行，...中， 之类
+.status-ing {
+    color: #fff;
+    background: #e6a23c; 
+}
+// 结束,失败，拒绝之类
+.status-refused {
+    color: #fff;
+    background: #f56c6c;
+}

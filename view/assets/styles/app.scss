@@ -1,0 +1,21 @@
+@charset "UTF-8";
+
+@import "~antd/dist/antd";
+@import "scroll";
+@import "status";
+@import "tabs";
+
+.icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.15em;
+  fill: currentColor;
+  overflow: hidden;
+  margin-right: 4px;
+}
+
+#root {
+  height: 100%;
+  min-height: 100%;
+}
+
