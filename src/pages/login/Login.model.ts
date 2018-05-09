@@ -91,7 +91,6 @@ export default {
     *token({ payload }: Action, { put, select }: EffectsCommandMap) {
       const result = payload as LoginedResult;
       const user = result.data;
-      user.refresh_token = result.data.refresh_token;
       window.sessionStorage.setItem(environment.tokenName, result.data.token);
       window.sessionStorage.setItem(environment.expiration, String(result.data.expire));
       window.sessionStorage.setItem(environment.userInfo, String(JSON.stringify(user)));
@@ -105,22 +104,6 @@ export default {
         }
       });
       yield put({ type: 'readShortcut', payload: true });
-    },
-    *readShortcut({ payload }: Action, { put, select }: EffectsCommandMap) {
-      const routeShortcut = JSON.parse(
-        window.localStorage.getItem(environment.shortcutMenu) || '[]'
-      );
-      // tslint:disable-next-line:no-any
-      const store = yield select((({ login }: any) => ({ login })) as any);
-      const routeLogin = store.login.route as MenuItem[];
-      const route = Immutable.fromJS(routeLogin)
-        .mergeDeep(Immutable.fromJS(routeShortcut))
-        .toJS();
-      yield put({ type: 'shortcutSuccess', payload: { route } });
-    },
-    *writeShortcut({ payload }: Action, { put, select }: EffectsCommandMap) {
-      window.localStorage.setItem(environment.shortcutMenu, String(JSON.stringify(payload.route)));
-      yield put({ type: 'shortcutSuccess', payload });
     },
     *access({ payload }: Action, { put, select }: EffectsCommandMap) {
       // tslint:disable-next-line:no-any
@@ -196,7 +179,6 @@ export interface LoginedResult {
   data: {
     // list: User;
     expire: number; // 时间戳
-    refresh_token: string;
     member_control: object;
     token: string;
     route: MenuItem[];
@@ -220,7 +202,6 @@ export interface User {
   logintime: string;
   role: string;
   member_control: object;
-  refresh_token: string;
   route: MenuItem[];
   email: string;
   mobile: string;

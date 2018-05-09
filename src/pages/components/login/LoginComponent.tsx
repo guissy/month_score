@@ -48,7 +48,6 @@ const loginGQL = gql`
           logintime
           role
           member_control
-          refresh_token
           email
           mobile
           telephone
@@ -81,17 +80,15 @@ const loginGQL = gql`
 @Form.create()
 @compose(
   graphql<{}, LoginState, {}>(loginGQL, {
-    alias: '流动性比利润更重要！',
+    alias: '登录表单',
     name: 'onLogin'
-    // props: ({ onLogin, ...data }) => ({ onLogin, data })
-    // skip: (props: {queryNow: boolean }) => !props.queryNow
   })
 )
 export default class LoginComponent extends React.PureComponent<Props, State> {
   state = {
     username: '',
     password: '',
-    rememberPwd: false
+    loading: false
   };
 
   componentDidMount() {
@@ -99,8 +96,7 @@ export default class LoginComponent extends React.PureComponent<Props, State> {
     const localPwd = window.localStorage.getItem('password');
     this.setState({
       username: localName ? localName : '',
-      password: localPwd ? localPwd : '',
-      rememberPwd: true
+      password: localPwd ? localPwd : ''
     });
   }
 
@@ -109,14 +105,15 @@ export default class LoginComponent extends React.PureComponent<Props, State> {
     const { form, onLogin } = this.props as Hoc;
     form.validateFields((err: object, values: object) => {
       if (!err) {
+        this.setState({ loading: true });
         onLogin({
           variables: values,
           update(cache: DataProxy, result: FetchResult) {
-            // cache.readQuery({ query: loginGQL });
             cache.writeData({ data: result });
           }
         })
           .then(({ data: { login = {} } = {} }: FetchResult<{ login: Result<LoginState> }>) => {
+            this.setState({ loading: false });
             const result = login as Result<LoginState>;
             if (result.state === 0) {
               this.props.dispatch!({ type: 'login/token', payload: result });
@@ -126,7 +123,10 @@ export default class LoginComponent extends React.PureComponent<Props, State> {
             }
             return result;
           })
-          .then(showMessageForResult);
+          .then(showMessageForResult)
+          .catch(() => {
+            this.setState({ loading: false });
+          });
       }
     });
   }
@@ -134,15 +134,13 @@ export default class LoginComponent extends React.PureComponent<Props, State> {
   render() {
     const {
       form: { getFieldDecorator },
-      onLogin
+      ...hehe
     } = this.props as Hoc;
-    const { height = '' } = this.props;
-    const { username, password } = this.state;
-    const loading = false; // todo loading
+    const { username, password, loading } = this.state;
     return (
       <PageLayout>
         <Layout.Content>
-          <MainRow type="flex" justify="space-around" align="middle" style={{ height: height }}>
+          <MainRow type="flex" justify="space-around" align="middle">
             <MainCol>
               <Form onSubmit={this.onSubmit}>
                 <Fieldset disabled={loading}>
@@ -209,7 +207,7 @@ export default class LoginComponent extends React.PureComponent<Props, State> {
 interface State {
   username: string;
   password: string;
-  rememberPwd: boolean;
+  loading: boolean;
 }
 
 interface Hoc {

@@ -7,14 +7,13 @@ import { messageError, showMessageForResult } from './showMessage';
 import { ResponseDetail } from './request';
 
 type Props = {};
-type LodashPick = typeof pick;
 // React.ComponentType<T>;
 type Component<T> = any; // tslint:disable-line
 /**
  * 带选择器的 Redux 的 connect
  * connect(({ns}) => ({ns})
  */
-export const select = compose<string | string[], ConnectFn<Props>, LodashPick>(connect, pick);
+export const select = compose<string | string[], ConnectFn<Props>, any>(connect, pick); // tslint:disable-line
 type ConnectFn<T> = <Super extends Component<T>, Impl extends Super>(component: Super) => Impl;
 
 const DEFAULT_OPT = {
