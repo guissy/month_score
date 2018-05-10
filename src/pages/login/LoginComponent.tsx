@@ -1,19 +1,21 @@
 import * as React from 'react';
-import { select } from '../../../utils/model';
+import { select } from '../../utils/model';
 import { Dispatch } from 'dva';
 import { Button, Col, Form, Icon, Input, Layout, Row } from 'antd';
 import styled from 'styled-components';
-import environment from '../../../utils/environment';
+import environment from '../../utils/environment';
 import { Link } from 'react-router-dom';
 import gql from 'graphql-tag';
-import { compose, graphql } from 'react-apollo';
-import { LoginState } from '../../login/Login.model';
+import { compose, graphql, withApollo } from 'react-apollo';
+import { LoginState, LoginUser } from '../login/Login.model';
 import { FetchResult, MutationFn } from 'react-apollo/Mutation';
 import { DataProxy } from 'apollo-cache';
 import { routerRedux } from 'dva/router';
-import { showMessageForResult } from '../../../utils/showMessage';
-import { Result } from '../../../utils/result';
+import { messageResult } from '../../utils/showMessage';
+import { Result } from '../../utils/result';
 import { WrappedFormUtils } from 'antd/es/form/Form';
+import ApolloClient from 'apollo-client/ApolloClient';
+import { ApolloQueryResult } from 'apollo-client/core/types';
 
 const PageLayout = styled(Layout)`
   background: none;
@@ -33,6 +35,7 @@ const MainCol = styled(Col)`
 const Submit = styled(Button)`
   width: 100%;
 `;
+
 const loginGQL = gql`
   mutation loginMutation($username: String!, $password: String!) {
     login(username: $username, password: $password) {
@@ -79,9 +82,13 @@ const loginGQL = gql`
 @select('')
 @Form.create()
 @compose(
+  withApollo,
   graphql<{}, LoginState, {}>(loginGQL, {
     alias: '登录表单',
-    name: 'onLogin'
+    name: 'loginMutation',
+    options: {
+      fetchPolicy: 'cache-only'
+    }
   })
 )
 export default class LoginComponent extends React.PureComponent<Props, State> {
@@ -102,17 +109,27 @@ export default class LoginComponent extends React.PureComponent<Props, State> {
 
   onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const { form, onLogin } = this.props as Hoc;
+    const { form, loginMutation } = this.props as Hoc;
     form.validateFields((err: object, values: object) => {
       if (!err) {
         this.setState({ loading: true });
-        onLogin({
+        loginMutation({
           variables: values,
-          update(cache: DataProxy, result: FetchResult) {
-            cache.writeData({ data: result });
+          update(cache: DataProxy, result: FetchResult<{ login: Result<LoginState> }>) {
+            if (result.data && result.data.login.data.list) {
+              cache.writeFragment({
+                id: 'user/login',
+                fragment: LoginUser,
+                data: {
+                  hasLogin: true,
+                  __typename: 'User'
+                }
+              });
+            }
           }
         })
-          .then(({ data: { login = {} } = {} }: FetchResult<{ login: Result<LoginState> }>) => {
+          .then(messageResult('login'))
+          .then(({ data: { login = {} } = {} }) => {
             this.setState({ loading: false });
             const result = login as Result<LoginState>;
             if (result.state === 0) {
@@ -123,7 +140,6 @@ export default class LoginComponent extends React.PureComponent<Props, State> {
             }
             return result;
           })
-          .then(showMessageForResult)
           .catch(() => {
             this.setState({ loading: false });
           });
@@ -133,8 +149,7 @@ export default class LoginComponent extends React.PureComponent<Props, State> {
 
   render() {
     const {
-      form: { getFieldDecorator },
-      ...hehe
+      form: { getFieldDecorator }
     } = this.props as Hoc;
     const { username, password, loading } = this.state;
     return (
@@ -213,7 +228,8 @@ interface State {
 interface Hoc {
   form: WrappedFormUtils;
   dispatch: Dispatch;
-  onLogin: MutationFn<{ login: Result<LoginState> }>;
+  loginMutation: MutationFn<{ login: Result<LoginState> }>;
+  client: ApolloClient<{}>;
 }
 
 interface Props extends Partial<Hoc> {}

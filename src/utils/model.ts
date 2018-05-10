@@ -1,13 +1,11 @@
 import { Action, connect, EffectFn, EffectsCommandMap, Model, Reducer } from 'dva';
 import { compose, pick } from 'lodash/fp';
-import * as React from 'react';
 import { Result } from './result';
 import { defaults } from 'lodash/fp';
 import { messageError, showMessageForResult } from './showMessage';
 import { ResponseDetail } from './request';
 
 type Props = {};
-// React.ComponentType<T>;
 type Component<T> = any; // tslint:disable-line
 /**
  * 带选择器的 Redux 的 connect

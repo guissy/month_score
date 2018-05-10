@@ -137,13 +137,13 @@ module.exports = {
         if (scoreDb) {
           scoreDb.set(scoreIn);
           scoreDb.set('uid', scoreIn.uid);
-          scoreDb.set('id', scoreIn.uid + '_' + scoreIn.date);
           scoreDb.save();
           result = resultOk(scoreDb.toJSON());
         } else {
           const score = new Score(scoreIn);
           score.set('createdTime', Date.now());
           score.set('uid', req.locals.__uid);
+          scoreDb.set('id', scoreIn.uid + '_' + scoreIn.date);
           score.save();
           result = resultOk(score.toJSON());
         }

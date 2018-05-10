@@ -1,10 +1,9 @@
 import * as React from 'react';
-import { Layout, Icon, Menu, Modal, Tooltip, Badge } from 'antd';
+import { Layout, Icon, Menu, Modal } from 'antd';
 import { select } from '../../../utils/model';
 import { Dispatch } from 'dva';
 import { Link } from 'dva/router';
 import { LoginState } from '../../login/Login.model';
-import { HeaderDefaultState } from './Header.model';
 import styled from 'styled-components';
 import { IntlKeys } from '../../../locale/zh_CN';
 import withLocale from '../../../utils/withLocale';
@@ -38,21 +37,6 @@ const HeaderWrap = styled(Layout.Header)`
   a.active {
     color: #c4554c;
     border-bottom: 1px solid #c4554c;
-  }
-`;
-const CollapseBtn = styled(Icon)`
-  color: ${props => props.theme.collapseBtn};
-  height: inherit;
-  line-height: inherit;
-  font-size: 20px;
-  padding: 0 24px;
-  margin-left: -20px;
-  margin-right: 10px;
-  transition: all 0.3s, padding 0s;
-  cursor: pointer;
-
-  &:hover {
-    background: #e6f7ff;
   }
 `;
 // tslint:disable-next-line:no-any
@@ -90,16 +74,6 @@ const MenuItem = styled(Menu.Item)`
     color: ${props => props.theme.utilsActive};
   }
 `;
-// tslint:disable-next-line:no-any
-const BadgeWrap = styled(Badge as any)`
-  color: inherit;
-  [class*='ant-badge-count'] {
-    height: 16px;
-    line-height: 16px;
-    min-width: 16px;
-    padding: 0 2px;
-  }
-`;
 const Username = styled.span`
   margin-right: 4px;
 `;
@@ -112,15 +86,6 @@ const ItemIcon = styled(Icon)`
 @select(['login', 'header', 'setting'])
 @autobind
 export default class Header extends React.PureComponent<HeaderProps, {}> {
-  static getDerivedStateFromProps(nextProps: HeaderProps, prevState: HeaderState) {
-    const { offline_deposit, withdraw, common } = nextProps.header || ({} as HeaderDefaultState);
-    return {
-      offline_deposit: offline_deposit,
-      withdraw: withdraw,
-      common: common
-    };
-  }
-
   state = {
     showPanel: false,
     offline_deposit: 0,
@@ -131,71 +96,13 @@ export default class Header extends React.PureComponent<HeaderProps, {}> {
     isEditPassword: false
   };
 
-  private timer: number;
-  private commonAudio: HTMLAudioElement;
-  private withdrawAudio: HTMLAudioElement;
-  private depositAudio: HTMLAudioElement;
-
-  componentDidMount() {
-    window.clearInterval(this.timer);
-    this.queryMessage();
-    this.timer = window.setInterval(() => {
-      this.queryMessage();
-    },                              30000);
-
-    window.document.addEventListener('click', this.closePanel);
-  }
-
-  closePanel = () => {
-    this.setState({ showPanel: false });
-  }
-
-  componentWillUnmount() {
-    window.clearInterval(this.timer);
-    window.document.removeEventListener('click', this.closePanel);
-  }
-
-  queryMessage = () => {
-    // this.props.dispatch!({ type: 'header/queryMessage', payload: {} });
-  }
-
-  showSetting = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    // navtiveEvent.stopPropagation 不管用
-    e.nativeEvent.stopImmediatePropagation();
-    this.setState({ showPanel: !this.state.showPanel });
-  }
-  showSettingPanel = (e: React.MouseEvent<HTMLDivElement>) => {
-    // navtiveEvent.stopPropagation 不管用
-    e.nativeEvent.stopImmediatePropagation();
-  }
-
-  onLogout = () => {
-    this.props.dispatch!({
-      type: 'login/logout',
-      payload: this.props.login && this.props.login.list
-    });
-  }
-
-  // 折叠 sider
-  toggleCollapsed = () => {
-    const { header = {} as HeaderDefaultState } = this.props;
-    this.props.dispatch!({
-      type: 'header/switchCollapsed',
-      payload: { collapsed: !header.collapsed }
-    });
-  }
-
   onOpenChange(e: React.MouseEvent<HTMLAnchorElement>) {
     this.setState({ isOpen: !this.state.isOpen });
     console.info(`🐞: `, e);
   }
 
   public render() {
-    const {
-      site = () => '',
-      header = {} as HeaderDefaultState,
-      login = {} as LoginState
-    } = this.props;
+    const { site = () => '', login = {} as LoginState } = this.props;
     const username = login.list.username;
 
     return (
@@ -247,9 +154,12 @@ export default class Header extends React.PureComponent<HeaderProps, {}> {
                   {(logout, { data }) => (
                     <a
                       onClick={() => {
-                        logout();
+                        logout().then(client => {
+                          console.log('☞☞☞ 9527 Header 251', client);
+                        });
                         this.props.dispatch!({ type: 'login/logout', payload: {} });
                         this.props.dispatch!(push('/login'));
+                        // data.client.resetStore();
                       }}
                     >
                       <ItemIcon type="logout" />
@@ -259,11 +169,6 @@ export default class Header extends React.PureComponent<HeaderProps, {}> {
                 </Mutation>
               </MenuItem>
             </SubMenu>
-            <Menu.Item key="setting">
-              <a onClick={e => this.showSetting(e)} hidden={true}>
-                {site('设置')}
-              </a>
-            </Menu.Item>
           </Utils>
           {environment.isDev && (
             <style>{`
@@ -279,7 +184,7 @@ export default class Header extends React.PureComponent<HeaderProps, {}> {
           footer={null}
           onCancel={() => this.setState({ isEditPassword: false })}
         >
-          <Password />
+          <Password onSubmit={() => this.setState({ isEditPassword: false })} />
         </Modal>
       </HeaderWrap>
     );
@@ -287,16 +192,7 @@ export default class Header extends React.PureComponent<HeaderProps, {}> {
 }
 
 interface HeaderProps {
-  login?: LoginState; // tslint:disable-line
+  login?: LoginState;
   dispatch?: Dispatch;
   site?: (words: IntlKeys) => React.ReactNode;
-  header?: HeaderDefaultState;
-}
-
-interface HeaderState {
-  showPanel: boolean; // 设置面板
-  offline_deposit: number; // 入款
-  withdraw: number; // 出款
-  common: number; // 消息
-  isOpen: boolean; // subMenu展开关闭
 }

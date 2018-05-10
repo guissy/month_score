@@ -1,23 +1,20 @@
 import * as React from 'react';
 import { select } from '../../utils/model';
 import styled from 'styled-components';
-import { Layout, Modal, LocaleProvider } from 'antd';
+import { Layout, LocaleProvider, Modal } from 'antd';
 import { addLocaleData, IntlProvider } from 'react-intl';
 import en from 'react-intl/locale-data/en';
 import zh from 'react-intl/locale-data/zh';
 import * as localeData from '../../locale';
-
 import zh_CN from 'antd/lib/locale-provider/zh_CN';
-import zh_TW from 'antd/lib/locale-provider/zh_TW';
 import en_US from 'antd/lib/locale-provider/en_US';
-
-import { HomeState } from './Home.model';
-import LoginComponent from '../components/login/LoginComponent';
 import { LoginState } from '../login/Login.model';
 
 import Header from './header/Header';
 import Routes from '../routes/Routes';
-import ErrorBoundary from '../components/error/ErrorBoundary';
+import { compose, withApollo } from 'react-apollo';
+import ApolloClient from 'apollo-client/ApolloClient';
+import LoginComponent from '../login/LoginComponent';
 
 const Content = styled(Layout.Content)`
   overflow-x: hidden;
@@ -32,17 +29,8 @@ const Layouter = styled.div`
 `;
 
 /** 首页：布局和路由 */
-@select(['home', 'login', 'setting'])
+@compose(withApollo, select('login'))
 export default class Home extends React.PureComponent<HomeProps, {}> {
-  constructor(props: HomeProps) {
-    super(props);
-  }
-
-  // componentDidMount() {
-  //   const { dispatch } = this.props as SubscriptionAPI;
-  //   dispatch({ type: 'home/query' });
-  // }
-
   render() {
     addLocaleData([...zh, ...en]);
     addLocaleData({ locale: 'zh_CN', ...localeData.zh_CN, parentLocale: 'zh' });
@@ -52,8 +40,6 @@ export default class Home extends React.PureComponent<HomeProps, {}> {
     const { login = {} as LoginState } = this.props;
     const lang = 'zh_CN';
     return (
-      // <React.StrictMode>
-      // </React.StrictMode>
       <LocaleProvider locale={zh_CN}>
         <IntlProvider locale={lang} messages={localeData[lang]}>
           <LayoutWrap>
@@ -80,6 +66,6 @@ export default class Home extends React.PureComponent<HomeProps, {}> {
 }
 
 interface HomeProps {
-  home?: HomeState;
+  client: ApolloClient<object>;
   login?: LoginState;
 }

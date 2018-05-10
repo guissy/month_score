@@ -2,8 +2,6 @@ import * as React from 'react';
 import styled from 'styled-components';
 import { Link } from 'dva/router';
 import { select } from '../../../utils/model';
-import { connect } from 'dva';
-import { HeaderDefaultState } from '../header/Header.model';
 import environment from '../../../utils/environment';
 
 const Wrap = styled(Link)`
@@ -36,21 +34,15 @@ const Wrap = styled(Link)`
 `;
 
 /** logo */
-@select('header')
 export default class LogoComponent extends React.PureComponent<Props, {}> {
   render() {
-    const { collapsed } = this.props.header || ({} as HeaderDefaultState);
-
     return (
       <Wrap to="/">
         <img src={`${environment.imgHost}${environment.logo}`} alt="logo" />
-        {/* 因flex属性菜单为折叠时文字不能隐藏，所以不显示 */}
-        {!collapsed && <h1>{environment.title}</h1>}
+        <h1>{environment.title}</h1>
       </Wrap>
     );
   }
 }
 
-interface Props {
-  header?: HeaderDefaultState;
-}
+interface Props {}

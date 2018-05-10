@@ -5,17 +5,36 @@ import styled from 'styled-components';
 import { select } from '../../../../utils/model';
 import { autobind } from 'core-decorators';
 import { WrappedFormUtils } from 'antd/lib/form/Form';
+import { graphql, MutationFn } from 'react-apollo';
+import gql from 'graphql-tag';
+import { messageResult, showMessageForResult } from '../../../../utils/showMessage';
 
 interface Hoc {
   dispatch: Dispatch;
   form: WrappedFormUtils;
+  passwordMutation: MutationFn;
 }
 
-interface Props extends Partial<Hoc> {}
+interface Props extends Partial<Hoc> {
+  onSubmit: () => void;
+}
 
 /** Password */
 @Form.create()
-@select('password')
+@graphql<{}, {}, {}>(
+  gql`
+    mutation passwordMutation($user: PasswordInput!) {
+      password(user: $user) {
+        state
+        message
+      }
+    }
+  `,
+  {
+    alias: '改密',
+    name: 'passwordMutation'
+  }
+)
 @autobind
 export default class Password extends React.PureComponent<Props, {}> {
   state = {};
@@ -24,13 +43,23 @@ export default class Password extends React.PureComponent<Props, {}> {
     e.preventDefault();
     const {
       dispatch,
-      form: { validateFields }
+      form: { validateFields },
+      passwordMutation
     } = this.props as Hoc;
     validateFields((err, values) => {
       if (err) {
         return;
       }
-      dispatch({ type: 'login/password', payload: values });
+      passwordMutation({
+        variables: {
+          user: values
+        }
+      })
+        .then(messageResult('password'))
+        .then(v => {
+          this.props.onSubmit();
+        });
+      // dispatch({ type: 'login/password', payload: values });
     });
   }
 

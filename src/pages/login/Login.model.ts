@@ -1,15 +1,11 @@
 import { Action, EffectsCommandMap, SubscriptionAPI } from 'dva';
-import { loginAjax, logoutAjax, passwordHttp } from './Login.service';
 import environment from '../../utils/environment';
 import { routerRedux } from 'dva/router';
 import { Location, Action as LocationAction } from 'history';
-import { URL } from 'uuid/v5';
 import { MenuItem } from '../home/sider/Menu.data';
-import Immutable from 'immutable';
 import { parse } from 'querystring';
-import { showMessageForResult } from '../../utils/showMessage';
-
-const uuidv5 = URL;
+import gql from 'graphql-tag';
+import ApolloClient from 'apollo-client/ApolloClient';
 
 export default {
   namespace: 'login',
@@ -61,29 +57,6 @@ export default {
     }
   },
   effects: {
-    *login({ payload }: Action, { call, put }: EffectsCommandMap) {
-      window.localStorage.setItem('username', payload.username);
-      // yield put({ type: 'changeLoading', payload: { loading: true } });
-      // payload.mac = uuidv5;
-      const result = yield call(loginAjax, payload);
-      if (result && result.state === 0) {
-        if (result.data.list) {
-          yield put({
-            type: 'token',
-            loading: false,
-            payload: { ...result }
-          });
-        }
-        const lastestUrl = window.sessionStorage.getItem('lastestUrl');
-        if (lastestUrl) {
-          window.location.href = `${location.origin}${lastestUrl}`;
-          window.sessionStorage.removeItem('lastestUrl');
-        } else {
-          window.location.href = `${location.origin}/`;
-        }
-      }
-      return showMessageForResult(result);
-    },
     *logout({ payload }: Action, { call, put }: EffectsCommandMap) {
       window.sessionStorage.clear();
       yield put({ type: 'logoutSuccess', payload: { hasLogin: false } });
@@ -130,9 +103,6 @@ export default {
           isFinish
         }
       });
-    },
-    *password({ payload }: Action, { call }: EffectsCommandMap) {
-      return showMessageForResult(yield call(passwordHttp, payload));
     }
   },
   reducers: {
@@ -209,4 +179,18 @@ export interface User {
   part: string;
   job: string;
   comment: string;
+}
+
+export const LoginUser = gql`
+  fragment LoginUser on User {
+    hasLogin
+  }
+`;
+
+export function hasLoginUser(client: ApolloClient<object>) {
+  const loginUser = client.readFragment({
+    id: 'user/login',
+    fragment: LoginUser
+  }) as { hasLogin: boolean };
+  return loginUser && loginUser.hasLogin;
 }

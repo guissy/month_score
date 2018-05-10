@@ -222,8 +222,8 @@ export default class ScoreDetail extends React.PureComponent<Props, State> {
           score: { ...values, date: values.date.format('YYYY-MM') }
         }
       })
-        .then(messageResult('save'))
-        .then(({ state }) => {
+        .then(messageResult<'save'>('save'))
+        .then(({ data: { save: { state = NaN } = {} } = {} }) => {
           if (state === 0) {
             dispatch(push(`/list`));
           }

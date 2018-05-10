@@ -7,7 +7,7 @@ import { Attributes } from '../../../utils/result';
 import { TablePaginationConfig, TableRowSelection } from 'antd/lib/table';
 import { WrappedFormUtils } from 'antd/lib/form/Form';
 import { messageError, prettyString } from '../../../utils/showMessage';
-import { FormConfig } from '../form/FormCompoent';
+import { ColumnProps } from 'antd/lib/table/interface';
 
 const DivWrap = styled.div.attrs<{ hasActions: boolean }>({})`
   background: #fff;
@@ -40,13 +40,13 @@ export default withLocale(
     site,
     ...props
   }: Props) {
-    let tableColumns: FormConfig[];
+    let tableColumns: ColumnProps<object>[];
     let hasActions = false;
     if (!Array.isArray(columns)) {
       tableColumns = [];
       messageError('表头column要求是数组，但是得到的是' + prettyString(dataSource));
     } else {
-      tableColumns = columns.filter(v => v.notInTable !== true);
+      tableColumns = columns;
       const lastColumn = tableColumns.slice().pop();
       hasActions = lastColumn ? lastColumn.title === site!('操作') : false;
     }
@@ -54,13 +54,14 @@ export default withLocale(
     if (typeof pagination === 'object') {
       const { totalRows } = pagination;
       totalRowsOk = totalRows.map((record: { rowName: string }) => {
+        const dataIndex = tableColumns[0].dataIndex as string;
         return {
           ...record,
-          [tableColumns[0].dataIndex]: record.rowName
+          [dataIndex]: record.rowName
         };
       });
     }
-    let dataSourceOk = [];
+    let dataSourceOk = [] as object[];
     if (Array.isArray(dataSource)) {
       dataSourceOk = dataSource.concat(totalRowsOk);
     } else {
@@ -90,8 +91,8 @@ interface TablePaginationConfigWithTotal extends TablePaginationConfig {
 }
 
 interface Props {
-  dataSource: any[]; // tslint:disable-line:no-any // 数据数组
-  columns: FormConfig[]; // 表格列的配置
+  dataSource: object[]; // tslint:disable-line:no-any // 数据数组
+  columns: ColumnProps<object>[]; // 表格列的配置
   rowKey?: string | ((record: any, index: number) => string); // tslint:disable-line:no-any
   site?: (words: string) => string;
   form?: WrappedFormUtils;
