@@ -154,12 +154,14 @@ export default class Header extends React.PureComponent<HeaderProps, {}> {
                   {(logout, { data }) => (
                     <a
                       onClick={() => {
-                        logout().then(client => {
-                          console.log('☞☞☞ 9527 Header 251', client);
-                        });
-                        this.props.dispatch!({ type: 'login/logout', payload: {} });
-                        this.props.dispatch!(push('/login'));
-                        // data.client.resetStore();
+                        logout()
+                          .then(client => {
+                            // data.client.resetStore();
+                          })
+                          .finally(() => {
+                            this.props.dispatch!({ type: 'login/logout', payload: {} });
+                            this.props.dispatch!(push('/login'));
+                          });
                       }}
                     >
                       <ItemIcon type="logout" />

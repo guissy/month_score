@@ -89,14 +89,10 @@ export function messageResult<T extends string = string>(graphKey: string) {
           message.success(result.message);
         }
       } else {
-        if (environment.isDev) {
-          messageError(result);
+        if (result.message && result.message.match(/[^\x00-\xff]/)) {
+          messageError(result.message);
         } else {
-          if (result.message && result.message.match(/[^\x00-\xff]/)) {
-            messageError(result.message);
-          } else {
-            messageError(content);
-          }
+          messageError(content);
         }
       }
     }
@@ -112,7 +108,7 @@ export function messageError(
   if (content instanceof Error) {
     if (content.message.toLowerCase().includes('fetch')) {
       message.error('服务器繁忙，请稍后重试！');
-      message.error(content);
+      // message.error(content.message);
     }
     messageDebug(content);
   } else if (isResult(content)) {
@@ -120,9 +116,17 @@ export function messageError(
     messageDebug(new Error(content.status + ' error'), JSON.stringify(content, null, '  '));
   } else if (isErrorResponse(content)) {
     const {
-      networkError: { statusCode = 200 }
+      networkError: { statusCode = 200, message: messageTxt }
     } = (content || {}) as ErrorResponse & { networkError: { statusCode: number } };
-    if (statusCode === 401 || (statusCode === 403 && typeof dispatch === 'function')) {
+    if (messageTxt.includes('fetch')) {
+      message.error('服务器繁忙，请稍后重试！');
+    }
+    if (
+      messageTxt.includes('fetch') ||
+      statusCode === 401 ||
+      (statusCode === 403 && typeof dispatch === 'function')
+    ) {
+      // todo hasLogin
       dispatch!({ type: 'login/update', payload: { needLogin: true } });
     } else {
       message.error(content.message);

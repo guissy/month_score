@@ -12,6 +12,8 @@ import { setContext } from 'apollo-link-context';
 import { onError } from 'apollo-link-error';
 import { ApolloProvider } from 'react-apollo';
 import { ApolloLink } from 'apollo-link';
+import { withClientState } from 'apollo-link-state';
+
 import Playground from 'graphql-playground';
 
 import './assets/fonts/iconfont';
@@ -24,8 +26,8 @@ import Register from './pages/register/Register';
 import environment from './utils/environment';
 import './assets/styles/google.css';
 import ErrorBoundary from './zongzi/pc/error/ErrorBoundary';
-import { messageError } from './utils/showMessage';
 import LoginComponent from './pages/login/LoginComponent';
+import { messageError } from './utils/showMessage';
 
 const app = dva({
   history: createBrowserHistory(),
@@ -50,6 +52,22 @@ const authLink = setContext((_, { headers }) => {
   const auth = token ? { authorization: `Bearer ${token}` } : {};
   return { headers: { ...headers, ...auth } };
 });
+const cache = new InMemoryCache();
+const stateLink = withClientState({
+  cache,
+  resolvers: {
+    Mutation: {
+      /*loginOk: (_, { username, password }, { cache }) => {
+        return {
+          data: {
+            state: 0,
+            message: ''
+          }
+        };
+      }*/
+    }
+  }
+});
 
 const errorLink = onError(error => {
   if (error.graphQLErrors) {
@@ -57,22 +75,15 @@ const errorLink = onError(error => {
       console.warn(`[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`)
     );
   }
-  if (hasLoginUser(client)) {
-    client.writeFragment({
-      id: 'user/login',
-      fragment: LoginUser,
-      data: {
-        hasLogin: false
-      }
-    });
+  if (!hasLoginUser(client)) {
+    // todo user/login false
+    messageError(error, app._store.dispatch);
   }
-  // console.log('☞☞☞ 9527 index 76', client.extract());
-  messageError(error, app._store.dispatch);
 });
 
 const client = new ApolloClient({
-  cache: new InMemoryCache(),
-  link: ApolloLink.from([authLink, errorLink, httpLink])
+  cache,
+  link: ApolloLink.from([stateLink, authLink, errorLink, httpLink])
 });
 const router = ({ history }: SubscriptionAPI) => {
   return (

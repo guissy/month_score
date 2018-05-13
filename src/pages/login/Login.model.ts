@@ -6,6 +6,7 @@ import { MenuItem } from '../home/sider/Menu.data';
 import { parse } from 'querystring';
 import gql from 'graphql-tag';
 import ApolloClient from 'apollo-client/ApolloClient';
+import { loginFrament } from './LoginComponent';
 
 export default {
   namespace: 'login',
@@ -188,9 +189,10 @@ export const LoginUser = gql`
 `;
 
 export function hasLoginUser(client: ApolloClient<object>) {
+  const loginKey = window.localStorage.getItem('loginKey') || '';
   const loginUser = client.readFragment({
-    id: 'user/login',
-    fragment: LoginUser
-  }) as { hasLogin: boolean };
-  return loginUser && loginUser.hasLogin;
+    id: loginKey,
+    fragment: loginFrament
+  }) as { data: {} };
+  return loginUser && loginUser.data;
 }

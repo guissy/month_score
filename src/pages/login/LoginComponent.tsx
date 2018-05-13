@@ -7,15 +7,17 @@ import environment from '../../utils/environment';
 import { Link } from 'react-router-dom';
 import gql from 'graphql-tag';
 import { compose, graphql, withApollo } from 'react-apollo';
-import { LoginState, LoginUser } from '../login/Login.model';
-import { FetchResult, MutationFn } from 'react-apollo/Mutation';
-import { DataProxy } from 'apollo-cache';
+import { LoginState } from '../login/Login.model';
+import { MutationFn } from 'react-apollo/Mutation';
 import { routerRedux } from 'dva/router';
-import { messageResult } from '../../utils/showMessage';
+import { messageError, messageResult } from '../../utils/showMessage';
 import { Result } from '../../utils/result';
 import { WrappedFormUtils } from 'antd/es/form/Form';
 import ApolloClient from 'apollo-client/ApolloClient';
-import { ApolloQueryResult } from 'apollo-client/core/types';
+import { from, of, Subscription } from 'rxjs';
+import { tap } from 'rxjs/operators';
+import { catchError } from 'rxjs/internal/operators';
+import { getStoreKeyName } from 'apollo-utilities';
 
 const PageLayout = styled(Layout)`
   background: none;
@@ -36,59 +38,60 @@ const Submit = styled(Button)`
   width: 100%;
 `;
 
-const loginGQL = gql`
-  mutation loginMutation($username: String!, $password: String!) {
-    login(username: $username, password: $password) {
-      state
-      message
-      data {
-        token
-        list {
-          id
-          username
-          truename
-          nick
-          logintime
-          role
-          member_control
-          email
-          mobile
-          telephone
-          part
-          job
-          comment
-        }
+/** login */
+export const loginFrament = gql`
+  fragment LoginUser on ResultLogin {
+    state
+    message
+    data {
+      token
+      list {
+        id
+        username
+        truename
+        logintime
         role
-        route {
+        part
+        job
+        comment
+      }
+      role
+      route {
+        id
+        name
+        action
+        path
+        icon
+        children {
           id
           name
           action
           path
           icon
-          children {
-            id
-            name
-            action
-            path
-            icon
-          }
         }
-        expire
       }
+      expire
     }
   }
+`;
+/** loginGql 登录状态 */
+export const loginGql = gql`
+  mutation loginMutation($username: String!, $password: String!) {
+    login(username: $username, password: $password) {
+      ...LoginUser
+    }
+  }
+  ${loginFrament}
 `;
 /** 登录表单 */
 @select('')
 @Form.create()
 @compose(
   withApollo,
-  graphql<{}, LoginState, {}>(loginGQL, {
+  graphql<{}, {}, {}>(loginGql, {
     alias: '登录表单',
-    name: 'loginMutation',
-    options: {
-      fetchPolicy: 'cache-only'
-    }
+    name: 'loginMutation'
+    // fetchPolicy 对mutation无效，
   })
 )
 export default class LoginComponent extends React.PureComponent<Props, State> {
@@ -97,6 +100,7 @@ export default class LoginComponent extends React.PureComponent<Props, State> {
     password: '',
     loading: false
   };
+  login$$: Subscription;
 
   componentDidMount() {
     const localName = window.localStorage.getItem('username');
@@ -113,38 +117,53 @@ export default class LoginComponent extends React.PureComponent<Props, State> {
     form.validateFields((err: object, values: object) => {
       if (!err) {
         this.setState({ loading: true });
-        loginMutation({
-          variables: values,
-          update(cache: DataProxy, result: FetchResult<{ login: Result<LoginState> }>) {
-            if (result.data && result.data.login.data.list) {
-              cache.writeFragment({
-                id: 'user/login',
-                fragment: LoginUser,
-                data: {
-                  hasLogin: true,
-                  __typename: 'User'
-                }
-              });
+        const { client } = this.props as Hoc;
+        this.login$$ = from(loginMutation({ variables: values }))
+          .pipe(
+            catchError((error: Error) => {
+              // 无网时读缓存
+              const loginKey = getStoreKeyName('$ROOT_MUTATION.login', values);
+              window.localStorage.setItem('loginKey', loginKey);
+              const login = client.readFragment({
+                id: loginKey,
+                fragment: loginFrament
+              }) as Result<{}>;
+              if (error && error.message.includes('Network error') && login && login.state === 0) {
+                return of({ data: { login } });
+              } else {
+                return of({ data: { login: { state: 1, message: '账号或密码错误！' } } });
+              }
+            }),
+            tap(messageResult('login'))
+          )
+          .subscribe(
+            ({ data: { login = {} } = {} }) => {
+              const result = login as Result<LoginState>;
+              if (result.state === 0) {
+                this.props.dispatch!({ type: 'login/token', payload: result });
+                const loginKey = getStoreKeyName('$ROOT_MUTATION.login', values);
+                window.localStorage.setItem('loginKey', loginKey);
+                window.localStorage.setItem('username', result.data.list.username);
+                const lastestUrl = window.sessionStorage.getItem('lastestUrl') || '/month';
+                this.props.dispatch!(routerRedux.push(`${lastestUrl}`));
+              }
+              return result;
+            },
+            () => {
+              this.setState({ loading: false });
+            },
+            () => {
+              this.setState({ loading: false });
             }
-          }
-        })
-          .then(messageResult('login'))
-          .then(({ data: { login = {} } = {} }) => {
-            this.setState({ loading: false });
-            const result = login as Result<LoginState>;
-            if (result.state === 0) {
-              this.props.dispatch!({ type: 'login/token', payload: result });
-              window.localStorage.setItem('username', result.data.list.username);
-              const lastestUrl = window.sessionStorage.getItem('lastestUrl') || '/month';
-              this.props.dispatch!(routerRedux.push(`${lastestUrl}`));
-            }
-            return result;
-          })
-          .catch(() => {
-            this.setState({ loading: false });
-          });
+          );
       }
     });
+  }
+
+  componentWillUnmount() {
+    if (this.login$$) {
+      this.login$$.unsubscribe();
+    }
   }
 
   render() {
