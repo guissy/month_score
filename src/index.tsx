@@ -7,7 +7,7 @@ import registerServiceWorker from './registerServiceWorker';
 
 import { ApolloClient } from 'apollo-client';
 import { createHttpLink } from 'apollo-link-http';
-import { InMemoryCache } from 'apollo-cache-inmemory';
+import { defaultDataIdFromObject, InMemoryCache } from 'apollo-cache-inmemory';
 import { setContext } from 'apollo-link-context';
 import { onError } from 'apollo-link-error';
 import { ApolloProvider } from 'react-apollo';
@@ -52,16 +52,21 @@ const authLink = setContext((_, { headers }) => {
   const auth = token ? { authorization: `Bearer ${token}` } : {};
   return { headers: { ...headers, ...auth } };
 });
-const cache = new InMemoryCache();
+const cache = new InMemoryCache({
+  // dataIdFromObject: value => {
+  //   return defaultDataIdFromObject(value)
+  // }
+});
 const stateLink = withClientState({
   cache,
   resolvers: {
     Mutation: {
-      /*loginOk: (_, { username, password }, { cache }) => {
+      /*login: (_, { username, password }, { cache }) => {
         return {
           data: {
             state: 0,
             message: ''
+            __typename: 'ResultLogin'
           }
         };
       }*/

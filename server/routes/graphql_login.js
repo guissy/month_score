@@ -4,6 +4,7 @@ const { Model } = require('mongorito');
 const mongodb = require('./mongodb');
 const { resultErr, resultOk } = require('./result');
 const { secretOrPrivateKey } = require('./token');
+const crypto = require('crypto')
 
 class Login extends Model {}
 mongodb.register(Login);
@@ -70,6 +71,7 @@ module.exports = {
       children: [MenuItem]
     }
     type Result<T> {
+      id: ID
       state: Int!
       message: String!
       data: T    
@@ -114,6 +116,8 @@ module.exports = {
             ? ["delete", "update", "fetch", "insert", 'finish']
             : ["delete", "update", "fetch", "insert", 'finish'];
           req.app.set(username, true);
+          const md5 = crypto.createHash('md5');
+          md5.update(JSON.stringify(loginIn));
           const data = {
             token: jwt.sign({
               username: username,
@@ -162,6 +166,7 @@ module.exports = {
             expire: (Date.now() + 60 * 60 * 1000) / 1000
           }
           result = resultOk(data);
+          // result.id = username + '_' + md5.digest('hex');
         }
         return result;
       },

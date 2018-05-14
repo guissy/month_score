@@ -10,7 +10,7 @@ import { compose, graphql, withApollo } from 'react-apollo';
 import { LoginState } from '../login/Login.model';
 import { MutationFn } from 'react-apollo/Mutation';
 import { routerRedux } from 'dva/router';
-import { messageError, messageResult } from '../../utils/showMessage';
+import { messageResult } from '../../utils/showMessage';
 import { Result } from '../../utils/result';
 import { WrappedFormUtils } from 'antd/es/form/Form';
 import ApolloClient from 'apollo-client/ApolloClient';
@@ -18,6 +18,7 @@ import { from, of, Subscription } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { catchError } from 'rxjs/internal/operators';
 import { getStoreKeyName } from 'apollo-utilities';
+import { sha1 } from '../../utils/md5';
 
 const PageLayout = styled(Layout)`
   background: none;
@@ -114,8 +115,9 @@ export default class LoginComponent extends React.PureComponent<Props, State> {
   onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const { form, loginMutation } = this.props as Hoc;
-    form.validateFields((err: object, values: object) => {
+    form.validateFields(async (err: object, values: { password: string }) => {
       if (!err) {
+        values.password = await sha1(values.password);
         this.setState({ loading: true });
         const { client } = this.props as Hoc;
         this.login$$ = from(loginMutation({ variables: values }))
@@ -127,7 +129,7 @@ export default class LoginComponent extends React.PureComponent<Props, State> {
               const login = client.readFragment({
                 id: loginKey,
                 fragment: loginFrament
-              }) as Result<{}>;
+              }) as Result<object>;
               if (error && error.message.includes('Network error') && login && login.state === 0) {
                 return of({ data: { login } });
               } else {
@@ -147,6 +149,7 @@ export default class LoginComponent extends React.PureComponent<Props, State> {
                 const lastestUrl = window.sessionStorage.getItem('lastestUrl') || '/month';
                 this.props.dispatch!(routerRedux.push(`${lastestUrl}`));
               }
+              console.log('☞☞☞ 9527 LoginComponent 156', client.cache.extract());
               return result;
             },
             () => {
